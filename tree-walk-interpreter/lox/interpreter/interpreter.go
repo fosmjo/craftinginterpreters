@@ -126,7 +126,7 @@ func (i *Interpreter) checkNumberOperands(operator scanner.Token, left, right in
 		panic(err)
 	}
 
-	if operator.Type == scanner.SLASH && int(v2) == 0 {
+	if operator.Type == scanner.SLASH && v2 == 0 {
 		err := RuntimeError{token: operator, msg: "Division by zero."}
 		panic(err)
 	}
