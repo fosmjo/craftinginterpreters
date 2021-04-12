@@ -7,7 +7,6 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/fosmjo/lox/astprinter"
 	"github.com/fosmjo/lox/interpreter"
 	"github.com/fosmjo/lox/parser"
 	"github.com/fosmjo/lox/scanner"
@@ -63,14 +62,12 @@ func (lox *Lox) run(source string) {
 	tokens := s.ScanTokens()
 	parser := parser.NewParser(tokens, lox)
 
-	expr, err := parser.Parse()
+	statements, err := parser.Parse()
 	if err != nil {
 		return
 	}
 
-	printer := &astprinter.AstPrinter{}
-	fmt.Printf("expression: %s\n", printer.Print(expr))
-	lox.interpreter.Interpret(expr)
+	lox.interpreter.Interpret(statements)
 }
 
 func (lox *Lox) Error(line int, msg string) {
@@ -97,7 +94,7 @@ func (lox *Lox) report(line int, where, msg string) {
 
 func main() {
 	lox := NewLox()
-	lox.interpreter = interpreter.New(lox)
+	lox.interpreter = interpreter.NewInterpreter(lox)
 
 	if len(os.Args) > 2 {
 		fmt.Println("Usage: lox [script]")

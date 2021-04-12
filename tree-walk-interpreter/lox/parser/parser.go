@@ -24,7 +24,7 @@ func NewParser(tokens []scanner.Token, lox loxer) *Parser {
 	}
 }
 
-func (p *Parser) Parse() (expr Expr, err error) {
+func (p *Parser) Parse() (stmts []Stmt, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			if e, ok := r.(ParseError); ok {
@@ -35,12 +35,98 @@ func (p *Parser) Parse() (expr Expr, err error) {
 		}
 	}()
 
-	expr = p.expression()
+	stmts = make([]Stmt, 0)
+	for !p.isAtEnd() {
+		stmts = append(stmts, p.declaration())
+	}
 	return
 }
 
 func (p *Parser) expression() Expr {
-	return p.equality()
+	return p.assignment()
+}
+
+func (p *Parser) declaration() Stmt {
+	defer func() {
+		if r := recover(); r != nil {
+			if _, ok := r.(ParseError); ok {
+				p.synchronize()
+			} else {
+				panic(r)
+			}
+		}
+	}()
+
+	if p.match(scanner.VAR) {
+		return p.varDeclaration()
+	}
+
+	return p.statement()
+}
+
+func (p *Parser) statement() Stmt {
+	switch {
+	case p.match(scanner.PRINT):
+		return p.printStatement()
+	case p.match(scanner.LEFT_BRACE):
+		return NewBlockStmt(p.block())
+	default:
+		return p.expressionStatement()
+	}
+}
+
+func (p *Parser) printStatement() Stmt {
+	expr := p.expression()
+	p.consume(scanner.SEMICOLON, "Expect ';' after value.")
+	return NewExpressionStmt(expr)
+}
+
+func (p *Parser) varDeclaration() Stmt {
+	name := p.consume(scanner.IDENTIFIER, "Expect variable name.")
+
+	var initializer Expr
+	if p.match(scanner.EQUAL) {
+		initializer = p.expression()
+	}
+
+	p.consume(scanner.SEMICOLON, "Expect ';' after variable declaration.")
+	return NewVarStmt(name, initializer)
+}
+
+func (p *Parser) expressionStatement() Stmt {
+	expr := p.expression()
+	p.consume(scanner.SEMICOLON, "Expect ';' after value.")
+	return NewPrintStmt(expr)
+}
+
+func (p *Parser) block() []Stmt {
+	stmts := make([]Stmt, 0)
+
+	for !p.check(scanner.RIGHT_BRACE) && !p.isAtEnd() {
+		stmts = append(stmts, p.declaration())
+	}
+
+	p.consume(scanner.RIGHT_BRACE, "Expect '}' after block.")
+	return stmts
+}
+
+func (p *Parser) assignment() Expr {
+	expr := p.equality()
+
+	if p.match(scanner.EQUAL) {
+		equals := p.previous()
+		value := p.assignment()
+
+		if varExpr, ok := expr.(VariableExpr); ok {
+			name := varExpr.Name
+			return NewAssignExpr(name, value)
+		}
+
+		err := p.error(equals, "Invalid assignment target.")
+		panic(err)
+	}
+
+	return expr
 }
 
 func (p *Parser) equality() Expr {
@@ -111,6 +197,8 @@ func (p *Parser) primary() Expr {
 		return NewLiteralExpr(nil)
 	case p.match(scanner.NUMBER, scanner.STRING):
 		return NewLiteralExpr(p.previous().Literal)
+	case p.match(scanner.IDENTIFIER):
+		return NewVariableExpr(p.previous())
 	case p.match(scanner.LEFT_PAREN):
 		expr := p.expression()
 		p.consume(scanner.RIGHT_PAREN, "Expect ')' after expression.")
@@ -142,6 +230,30 @@ func (p *Parser) consume(t scanner.TokenType, msg string) scanner.Token {
 func (p *Parser) error(token scanner.Token, msg string) ParseError {
 	p.lox.ErrorWithToken(token, msg)
 	return ParseError{msg: msg}
+}
+
+func (p *Parser) synchronize() {
+	p.advance()
+
+	for !p.isAtEnd() {
+		if p.previous().Type == scanner.SEMICOLON {
+			return
+		}
+
+		switch p.peek().Type {
+		case scanner.CLASS,
+			scanner.FUN,
+			scanner.VAR,
+			scanner.FOR,
+			scanner.IF,
+			scanner.WHILE,
+			scanner.PRINT,
+			scanner.RETURN:
+			return
+		}
+
+		p.advance()
+	}
 }
 
 func (p *Parser) advance() scanner.Token {

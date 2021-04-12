@@ -9,6 +9,7 @@ import (
 )
 
 type Interpreter struct {
+	env *Environment
 	lox loxer
 }
 
@@ -16,11 +17,12 @@ type loxer interface {
 	RuntimeError(err RuntimeError)
 }
 
-func New(lox loxer) *Interpreter {
-	return &Interpreter{lox: lox}
+func NewInterpreter(lox loxer) *Interpreter {
+	env := NewEnvironment()
+	return &Interpreter{env: env, lox: lox}
 }
 
-func (i *Interpreter) Interpret(expr parser.Expr) {
+func (i *Interpreter) Interpret(stmts []parser.Stmt) {
 	defer func() {
 		if r := recover(); r != nil {
 			if err, ok := r.(RuntimeError); ok {
@@ -31,8 +33,9 @@ func (i *Interpreter) Interpret(expr parser.Expr) {
 		}
 	}()
 
-	result := i.evaluate(expr)
-	fmt.Println(i.stringify(result))
+	for _, stmt := range stmts {
+		i.execute(stmt)
+	}
 }
 
 func (i *Interpreter) VisitBinaryExpr(expr parser.BinaryExpr) interface{} {
@@ -106,8 +109,58 @@ func (i *Interpreter) VisitUnaryExpr(expr parser.UnaryExpr) interface{} {
 	}
 }
 
+func (i *Interpreter) VisitVariableExpr(expr parser.VariableExpr) interface{} {
+	return i.env.Get(expr.Name)
+}
+
+func (i *Interpreter) VisitAssignExpr(expr parser.AssignExpr) interface{} {
+	value := i.evaluate(expr.Value)
+	i.env.Assign(expr.Name, value)
+	return value
+}
+
+func (i *Interpreter) VisitExpressionStmt(stmt parser.ExpressionStmt) interface{} {
+	ret := i.evaluate(stmt.Expression)
+	fmt.Println(i.stringify(ret))
+	return nil
+}
+
+func (i *Interpreter) VisitPrintStmt(stmt parser.PrintStmt) interface{} {
+	i.evaluate(stmt.Expression)
+	return nil
+}
+
+func (i *Interpreter) VisitVarStmt(stmt parser.VarStmt) interface{} {
+	var value interface{}
+	if stmt.Initializer != nil {
+		value = i.evaluate(stmt.Initializer)
+	}
+	i.env.Define(stmt.Name.Lexeme, value)
+	return nil
+}
+
+func (i *Interpreter) VisitBlockStmt(stmt parser.BlockStmt) interface{} {
+	env := NewEnvironment(WithEnclosing(i.env))
+	i.executeBlock(stmt.Statements, env)
+	return nil
+}
+
 func (i *Interpreter) evaluate(expr parser.Expr) interface{} {
 	return expr.Accept(i)
+}
+
+func (i *Interpreter) execute(stmt parser.Stmt) {
+	stmt.Accept(i)
+}
+
+func (i *Interpreter) executeBlock(stmts []parser.Stmt, env *Environment) {
+	preEnv := i.env
+	defer func() { i.env = preEnv }()
+
+	i.env = env
+	for _, stmt := range stmts {
+		i.execute(stmt)
+	}
 }
 
 func (i *Interpreter) checkNumberOperand(operator scanner.Token, object interface{}) {

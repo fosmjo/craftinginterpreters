@@ -55,7 +55,7 @@ func defineType(w io.Writer, baseName, s string) {
 	fmt.Fprintf(w, "}\n\n")
 
 	// factory
-	fmt.Fprintf(w, "func New%s(%s) %s{\n", structName, params, structName)
+	fmt.Fprintf(w, "func New%s(%s) %s {\n", structName, params, structName)
 	fmt.Fprintf(w, "    return %s{\n", structName)
 
 	for _, field := range fields {
@@ -74,21 +74,37 @@ func defineType(w io.Writer, baseName, s string) {
 	fmt.Fprintf(w, "}\n\n")
 }
 
-func main() {
-	file, err := os.Create("expr.go")
+func gen(fileName, baseName string, types []string) {
+	file, err := os.Create(fileName)
 	if err != nil {
 		log.Fatalln(err)
 	}
 	defer file.Close()
 
-	defineAst(
-		file,
+	defineAst(file, baseName, types)
+}
+
+func main() {
+	gen(
+		"expr.go",
 		"Expr",
 		[]string{
+			"Assign   : name scanner.Token, value Expr",
 			"Binary   : left Expr, operator scanner.Token, right Expr",
 			"Grouping : expression Expr",
 			"Literal  : value interface{}",
 			"Unary    : operator scanner.Token, right Expr",
+			"Variable : name scanner.Token",
+		},
+	)
+	gen(
+		"stmt.go",
+		"Stmt",
+		[]string{
+			"Block      : statements []Stmt",
+			"Expression : expression Expr",
+			"Print      : expression Expr",
+			"Var        : name scanner.Token, initializer Expr",
 		},
 	)
 }

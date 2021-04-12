@@ -9,10 +9,28 @@ type Expr interface {
 }
 
 type ExprVisitor interface {
+    VisitAssignExpr(AssignExpr) interface{}
     VisitBinaryExpr(BinaryExpr) interface{}
     VisitGroupingExpr(GroupingExpr) interface{}
     VisitLiteralExpr(LiteralExpr) interface{}
     VisitUnaryExpr(UnaryExpr) interface{}
+    VisitVariableExpr(VariableExpr) interface{}
+}
+
+type AssignExpr struct {
+    Name scanner.Token
+    Value Expr
+}
+
+func NewAssignExpr(name scanner.Token, value Expr) AssignExpr {
+    return AssignExpr{
+        Name: name,
+        Value: value,
+    }
+}
+
+func (expr AssignExpr) Accept(visitor ExprVisitor) interface{} {
+    return visitor.VisitAssignExpr(expr)
 }
 
 type BinaryExpr struct {
@@ -21,7 +39,7 @@ type BinaryExpr struct {
     Right Expr
 }
 
-func NewBinaryExpr(left Expr, operator scanner.Token, right Expr) BinaryExpr{
+func NewBinaryExpr(left Expr, operator scanner.Token, right Expr) BinaryExpr {
     return BinaryExpr{
         Left: left,
         Operator: operator,
@@ -37,7 +55,7 @@ type GroupingExpr struct {
     Expression Expr
 }
 
-func NewGroupingExpr(expression Expr) GroupingExpr{
+func NewGroupingExpr(expression Expr) GroupingExpr {
     return GroupingExpr{
         Expression: expression,
     }
@@ -51,7 +69,7 @@ type LiteralExpr struct {
     Value interface{}
 }
 
-func NewLiteralExpr(value interface{}) LiteralExpr{
+func NewLiteralExpr(value interface{}) LiteralExpr {
     return LiteralExpr{
         Value: value,
     }
@@ -66,7 +84,7 @@ type UnaryExpr struct {
     Right Expr
 }
 
-func NewUnaryExpr(operator scanner.Token, right Expr) UnaryExpr{
+func NewUnaryExpr(operator scanner.Token, right Expr) UnaryExpr {
     return UnaryExpr{
         Operator: operator,
         Right: right,
@@ -75,5 +93,19 @@ func NewUnaryExpr(operator scanner.Token, right Expr) UnaryExpr{
 
 func (expr UnaryExpr) Accept(visitor ExprVisitor) interface{} {
     return visitor.VisitUnaryExpr(expr)
+}
+
+type VariableExpr struct {
+    Name scanner.Token
+}
+
+func NewVariableExpr(name scanner.Token) VariableExpr {
+    return VariableExpr{
+        Name: name,
+    }
+}
+
+func (expr VariableExpr) Accept(visitor ExprVisitor) interface{} {
+    return visitor.VisitVariableExpr(expr)
 }
 
