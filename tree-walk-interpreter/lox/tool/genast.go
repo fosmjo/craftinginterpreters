@@ -93,6 +93,7 @@ func main() {
 			"Binary   : left Expr, operator scanner.Token, right Expr",
 			"Grouping : expression Expr",
 			"Literal  : value interface{}",
+			"Logical  : left Expr, operator scanner.Token, right Expr",
 			"Unary    : operator scanner.Token, right Expr",
 			"Variable : name scanner.Token",
 		},
@@ -103,8 +104,10 @@ func main() {
 		[]string{
 			"Block      : statements []Stmt",
 			"Expression : expression Expr",
+			"If         : condition Expr, thenBranch Stmt, elseBranch Stmt",
 			"Print      : expression Expr",
 			"Var        : name scanner.Token, initializer Expr",
+			"While      : condition Expr, body Stmt",
 		},
 	)
 }

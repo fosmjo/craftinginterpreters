@@ -66,13 +66,76 @@ func (p *Parser) declaration() Stmt {
 
 func (p *Parser) statement() Stmt {
 	switch {
+	case p.match(scanner.FOR):
+		return p.forStatement()
+	case p.match(scanner.IF):
+		return p.ifStatement()
 	case p.match(scanner.PRINT):
 		return p.printStatement()
+	case p.match(scanner.WHILE):
+		return p.whileStatement()
 	case p.match(scanner.LEFT_BRACE):
 		return NewBlockStmt(p.block())
 	default:
 		return p.expressionStatement()
 	}
+}
+
+func (p *Parser) forStatement() Stmt {
+	p.consume(scanner.LEFT_PAREN, "Expect '(' after 'for'.")
+
+	var initializer Stmt
+	switch {
+	case p.match(scanner.SEMICOLON):
+		initializer = nil
+	case p.match(scanner.VAR):
+		initializer = p.varDeclaration()
+	default:
+		initializer = p.expressionStatement()
+	}
+
+	var condition Expr
+	if !p.check(scanner.SEMICOLON) {
+		condition = p.expression()
+	}
+	p.consume(scanner.SEMICOLON, "Expect ';' after loop condition.")
+
+	var increment Expr
+	if !p.check(scanner.RIGHT_PAREN) {
+		increment = p.expression()
+	}
+	p.consume(scanner.RIGHT_PAREN, "Expect ')' after for clauses.")
+
+	body := p.statement()
+
+	if increment != nil {
+		body = NewBlockStmt([]Stmt{body, NewExpressionStmt(increment)})
+	}
+
+	if condition == nil {
+		condition = NewLiteralExpr(true)
+	}
+	body = NewWhileStmt(condition, body)
+
+	if initializer != nil {
+		body = NewBlockStmt([]Stmt{initializer, body})
+	}
+
+	return body
+}
+
+func (p *Parser) ifStatement() Stmt {
+	p.consume(scanner.LEFT_PAREN, "Expect '(' after 'if'.")
+	condition := p.expression()
+	p.consume(scanner.RIGHT_PAREN, "Expect ')' after if condition.")
+
+	thenBranch := p.statement()
+	var elseBranch Stmt
+	if p.match(scanner.ELSE) {
+		elseBranch = p.statement()
+	}
+
+	return NewIfStmt(condition, thenBranch, elseBranch)
 }
 
 func (p *Parser) printStatement() Stmt {
@@ -93,6 +156,15 @@ func (p *Parser) varDeclaration() Stmt {
 	return NewVarStmt(name, initializer)
 }
 
+func (p *Parser) whileStatement() Stmt {
+	p.consume(scanner.LEFT_PAREN, "Expect '(' after 'while'.")
+	condition := p.expression()
+	p.consume(scanner.RIGHT_PAREN, "Expect '(' after 'while'.")
+	body := p.statement()
+
+	return NewWhileStmt(condition, body)
+}
+
 func (p *Parser) expressionStatement() Stmt {
 	expr := p.expression()
 	p.consume(scanner.SEMICOLON, "Expect ';' after value.")
@@ -111,7 +183,7 @@ func (p *Parser) block() []Stmt {
 }
 
 func (p *Parser) assignment() Expr {
-	expr := p.equality()
+	expr := p.or()
 
 	if p.match(scanner.EQUAL) {
 		equals := p.previous()
@@ -124,6 +196,30 @@ func (p *Parser) assignment() Expr {
 
 		err := p.error(equals, "Invalid assignment target.")
 		panic(err)
+	}
+
+	return expr
+}
+
+func (p *Parser) or() Expr {
+	expr := p.and()
+
+	for p.match(scanner.OR) {
+		operator := p.previous()
+		right := p.and()
+		expr = NewLogicalExpr(expr, operator, right)
+	}
+
+	return expr
+}
+
+func (p *Parser) and() Expr {
+	expr := p.equality()
+
+	for p.match(scanner.AND) {
+		operator := p.previous()
+		right := p.equality()
+		expr = NewLogicalExpr(expr, operator, right)
 	}
 
 	return expr

@@ -11,8 +11,10 @@ type Stmt interface {
 type StmtVisitor interface {
     VisitBlockStmt(BlockStmt) interface{}
     VisitExpressionStmt(ExpressionStmt) interface{}
+    VisitIfStmt(IfStmt) interface{}
     VisitPrintStmt(PrintStmt) interface{}
     VisitVarStmt(VarStmt) interface{}
+    VisitWhileStmt(WhileStmt) interface{}
 }
 
 type BlockStmt struct {
@@ -43,6 +45,24 @@ func (stmt ExpressionStmt) Accept(visitor StmtVisitor) interface{} {
     return visitor.VisitExpressionStmt(stmt)
 }
 
+type IfStmt struct {
+    Condition Expr
+    ThenBranch Stmt
+    ElseBranch Stmt
+}
+
+func NewIfStmt(condition Expr, thenBranch Stmt, elseBranch Stmt) IfStmt {
+    return IfStmt{
+        Condition: condition,
+        ThenBranch: thenBranch,
+        ElseBranch: elseBranch,
+    }
+}
+
+func (stmt IfStmt) Accept(visitor StmtVisitor) interface{} {
+    return visitor.VisitIfStmt(stmt)
+}
+
 type PrintStmt struct {
     Expression Expr
 }
@@ -71,5 +91,21 @@ func NewVarStmt(name scanner.Token, initializer Expr) VarStmt {
 
 func (stmt VarStmt) Accept(visitor StmtVisitor) interface{} {
     return visitor.VisitVarStmt(stmt)
+}
+
+type WhileStmt struct {
+    Condition Expr
+    Body Stmt
+}
+
+func NewWhileStmt(condition Expr, body Stmt) WhileStmt {
+    return WhileStmt{
+        Condition: condition,
+        Body: body,
+    }
+}
+
+func (stmt WhileStmt) Accept(visitor StmtVisitor) interface{} {
+    return visitor.VisitWhileStmt(stmt)
 }
 

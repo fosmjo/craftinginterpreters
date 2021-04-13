@@ -96,6 +96,22 @@ func (i *Interpreter) VisitLiteralExpr(expr parser.LiteralExpr) interface{} {
 	return expr.Value
 }
 
+func (i *Interpreter) VisitLogicalExpr(expr parser.LogicalExpr) interface{} {
+	left := i.evaluate(expr.Left)
+
+	if expr.Operator.Type == scanner.OR {
+		if i.isTruthy(left) {
+			return left
+		}
+	} else {
+		if !i.isTruthy(left) {
+			return left
+		}
+	}
+
+	return i.evaluate(expr.Right)
+}
+
 func (i *Interpreter) VisitUnaryExpr(expr parser.UnaryExpr) interface{} {
 	right := i.evaluate(expr.Right)
 
@@ -125,6 +141,16 @@ func (i *Interpreter) VisitExpressionStmt(stmt parser.ExpressionStmt) interface{
 	return nil
 }
 
+func (i *Interpreter) VisitIfStmt(stmt parser.IfStmt) interface{} {
+	cond := i.evaluate(stmt.Condition)
+	if i.isTruthy(cond) {
+		i.execute(stmt.ThenBranch)
+	} else if stmt.ElseBranch != nil {
+		i.execute(stmt.ElseBranch)
+	}
+	return nil
+}
+
 func (i *Interpreter) VisitPrintStmt(stmt parser.PrintStmt) interface{} {
 	i.evaluate(stmt.Expression)
 	return nil
@@ -136,6 +162,13 @@ func (i *Interpreter) VisitVarStmt(stmt parser.VarStmt) interface{} {
 		value = i.evaluate(stmt.Initializer)
 	}
 	i.env.Define(stmt.Name.Lexeme, value)
+	return nil
+}
+
+func (i *Interpreter) VisitWhileStmt(stmt parser.WhileStmt) interface{} {
+	for i.isTruthy(i.evaluate(stmt.Condition)) {
+		i.execute(stmt.Body)
+	}
 	return nil
 }
 
