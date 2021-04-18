@@ -9,6 +9,7 @@ import (
 
 	"github.com/fosmjo/lox/interpreter"
 	"github.com/fosmjo/lox/parser"
+	"github.com/fosmjo/lox/resolver"
 	"github.com/fosmjo/lox/scanner"
 )
 
@@ -64,6 +65,14 @@ func (lox *Lox) run(source string) {
 
 	statements, err := parser.Parse()
 	if err != nil {
+		return
+	}
+
+	resolver := resolver.NewResolver(lox.interpreter, lox)
+	resolver.Resolve(statements)
+
+	// Stop if there was a resolution error.
+	if lox.hadError {
 		return
 	}
 

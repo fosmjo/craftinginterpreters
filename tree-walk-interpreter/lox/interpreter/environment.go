@@ -57,3 +57,21 @@ func (e *Environment) Assign(name scanner.Token, value interface{}) {
 	err := RuntimeError{token: name, msg: "Undefined variable '" + name.Lexeme + "'."}
 	panic(err)
 }
+
+func (e *Environment) GetAt(distance int, name string) interface{} {
+	return e.Ancestor(distance).vars[name]
+}
+
+func (e *Environment) AssignAt(distance int, name scanner.Token, value interface{}) {
+	e.Ancestor(distance).vars[name.Lexeme] = value
+}
+
+func (e *Environment) Ancestor(distance int) *Environment {
+	ret := e
+
+	for i := 0; i < distance; i++ {
+		ret = ret.enclosing
+	}
+
+	return ret
+}

@@ -11,6 +11,7 @@ import (
 type Interpreter struct {
 	globals *Environment
 	env     *Environment
+	locals  map[parser.Expr]int
 	lox     loxer
 }
 
@@ -21,7 +22,14 @@ type loxer interface {
 func NewInterpreter(lox loxer) *Interpreter {
 	globals := NewEnvironment()
 	globals.Define("clock", clock{})
-	return &Interpreter{globals: globals, env: globals, lox: lox}
+	locals := make(map[parser.Expr]int)
+
+	return &Interpreter{
+		globals: globals,
+		env:     globals,
+		locals:  locals,
+		lox:     lox,
+	}
 }
 
 func (i *Interpreter) Interpret(stmts []parser.Stmt) {
@@ -148,12 +156,19 @@ func (i *Interpreter) VisitUnaryExpr(expr parser.UnaryExpr) interface{} {
 }
 
 func (i *Interpreter) VisitVariableExpr(expr parser.VariableExpr) interface{} {
-	return i.env.Get(expr.Name)
+	return i.lookUpVariable(expr.Name, expr)
 }
 
 func (i *Interpreter) VisitAssignExpr(expr parser.AssignExpr) interface{} {
 	value := i.evaluate(expr.Value)
-	i.env.Assign(expr.Name, value)
+
+	distance, ok := i.locals[expr]
+	if ok {
+		i.env.AssignAt(distance, expr.Name, value)
+	} else {
+		i.globals.Assign(expr.Name, value)
+	}
+
 	return value
 }
 
@@ -214,6 +229,19 @@ func (i *Interpreter) VisitBlockStmt(stmt parser.BlockStmt) interface{} {
 	env := NewEnvironment(WithEnclosing(i.env))
 	i.executeBlock(stmt.Statements, env)
 	return nil
+}
+
+func (i *Interpreter) Resolve(expr parser.Expr, depth int) {
+	i.locals[expr] = depth
+}
+
+func (i *Interpreter) lookUpVariable(name scanner.Token, expr parser.Expr) interface{} {
+	distance, ok := i.locals[expr]
+	if ok {
+		return i.env.GetAt(distance, name.Lexeme)
+	} else {
+		return i.globals.Get(name)
+	}
 }
 
 func (i *Interpreter) evaluate(expr parser.Expr) interface{} {
