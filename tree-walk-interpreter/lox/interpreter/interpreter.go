@@ -9,8 +9,9 @@ import (
 )
 
 type Interpreter struct {
-	env *Environment
-	lox loxer
+	globals *Environment
+	env     *Environment
+	lox     loxer
 }
 
 type loxer interface {
@@ -18,8 +19,9 @@ type loxer interface {
 }
 
 func NewInterpreter(lox loxer) *Interpreter {
-	env := NewEnvironment()
-	return &Interpreter{env: env, lox: lox}
+	globals := NewEnvironment()
+	globals.Define("clock", clock{})
+	return &Interpreter{globals: globals, env: globals, lox: lox}
 }
 
 func (i *Interpreter) Interpret(stmts []parser.Stmt) {
@@ -88,6 +90,26 @@ func (i *Interpreter) VisitBinaryExpr(expr parser.BinaryExpr) interface{} {
 	return nil
 }
 
+func (i *Interpreter) VisitCallExpr(expr parser.CallExpr) interface{} {
+	callee := i.evaluate(expr.Callee)
+
+	arguments := make([]interface{}, 0)
+	for _, arg := range expr.Arguments {
+		arguments = append(arguments, i.evaluate(arg))
+	}
+
+	function, ok := callee.(Callable)
+	if !ok {
+		err := RuntimeError{token: expr.Paren, msg: "Can only call functions and classes."}
+		panic(err)
+	}
+	if len(arguments) != function.Arity() {
+		err := RuntimeError{token: expr.Paren, msg: fmt.Sprintf("Expected %d arguments but got %d.", function.Arity(), len(arguments))}
+		panic(err)
+	}
+	return function.Call(i, arguments)
+}
+
 func (i *Interpreter) VisitGroupingExpr(expr parser.GroupingExpr) interface{} {
 	return i.evaluate(expr.Expression)
 }
@@ -141,6 +163,12 @@ func (i *Interpreter) VisitExpressionStmt(stmt parser.ExpressionStmt) interface{
 	return nil
 }
 
+func (i *Interpreter) VisitFunctionStmt(stmt parser.FunctionStmt) interface{} {
+	function := NewFunction(stmt, i.env)
+	i.env.Define(stmt.Name.Lexeme, function)
+	return nil
+}
+
 func (i *Interpreter) VisitIfStmt(stmt parser.IfStmt) interface{} {
 	cond := i.evaluate(stmt.Condition)
 	if i.isTruthy(cond) {
@@ -154,6 +182,16 @@ func (i *Interpreter) VisitIfStmt(stmt parser.IfStmt) interface{} {
 func (i *Interpreter) VisitPrintStmt(stmt parser.PrintStmt) interface{} {
 	i.evaluate(stmt.Expression)
 	return nil
+}
+
+func (i *Interpreter) VisitReturnStmt(stmt parser.ReturnStmt) interface{} {
+	var value interface{}
+	if stmt.Value != nil {
+		value = i.evaluate(stmt.Value)
+	}
+
+	ret := Return{value: value}
+	panic(ret)
 }
 
 func (i *Interpreter) VisitVarStmt(stmt parser.VarStmt) interface{} {

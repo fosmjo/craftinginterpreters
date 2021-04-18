@@ -11,6 +11,7 @@ type Expr interface {
 type ExprVisitor interface {
     VisitAssignExpr(AssignExpr) interface{}
     VisitBinaryExpr(BinaryExpr) interface{}
+    VisitCallExpr(CallExpr) interface{}
     VisitGroupingExpr(GroupingExpr) interface{}
     VisitLiteralExpr(LiteralExpr) interface{}
     VisitLogicalExpr(LogicalExpr) interface{}
@@ -50,6 +51,24 @@ func NewBinaryExpr(left Expr, operator scanner.Token, right Expr) BinaryExpr {
 
 func (expr BinaryExpr) Accept(visitor ExprVisitor) interface{} {
     return visitor.VisitBinaryExpr(expr)
+}
+
+type CallExpr struct {
+    Callee Expr
+    Paren scanner.Token
+    Arguments []Expr
+}
+
+func NewCallExpr(callee Expr, paren scanner.Token, arguments []Expr) CallExpr {
+    return CallExpr{
+        Callee: callee,
+        Paren: paren,
+        Arguments: arguments,
+    }
+}
+
+func (expr CallExpr) Accept(visitor ExprVisitor) interface{} {
+    return visitor.VisitCallExpr(expr)
 }
 
 type GroupingExpr struct {

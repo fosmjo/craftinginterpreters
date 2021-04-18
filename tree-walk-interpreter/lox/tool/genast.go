@@ -91,6 +91,7 @@ func main() {
 		[]string{
 			"Assign   : name scanner.Token, value Expr",
 			"Binary   : left Expr, operator scanner.Token, right Expr",
+			"Call     : callee Expr, paren scanner.Token, arguments []Expr",
 			"Grouping : expression Expr",
 			"Literal  : value interface{}",
 			"Logical  : left Expr, operator scanner.Token, right Expr",
@@ -104,8 +105,10 @@ func main() {
 		[]string{
 			"Block      : statements []Stmt",
 			"Expression : expression Expr",
+			"Function   : name scanner.Token, params []scanner.Token, body []Stmt",
 			"If         : condition Expr, thenBranch Stmt, elseBranch Stmt",
 			"Print      : expression Expr",
+			"Return     : keyword scanner.Token, value Expr",
 			"Var        : name scanner.Token, initializer Expr",
 			"While      : condition Expr, body Stmt",
 		},

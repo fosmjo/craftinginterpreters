@@ -3,8 +3,12 @@
 package parser
 
 import (
+	"fmt"
+
 	"github.com/fosmjo/lox/scanner"
 )
+
+const maxArgumentCount = 255
 
 type Parser struct {
 	tokens  []scanner.Token
@@ -57,7 +61,10 @@ func (p *Parser) declaration() Stmt {
 		}
 	}()
 
-	if p.match(scanner.VAR) {
+	switch {
+	case p.match(scanner.FUN):
+		return p.function("function")
+	case p.match(scanner.VAR):
 		return p.varDeclaration()
 	}
 
@@ -72,6 +79,8 @@ func (p *Parser) statement() Stmt {
 		return p.ifStatement()
 	case p.match(scanner.PRINT):
 		return p.printStatement()
+	case p.match(scanner.RETURN):
+		return p.returnStatement()
 	case p.match(scanner.WHILE):
 		return p.whileStatement()
 	case p.match(scanner.LEFT_BRACE):
@@ -144,6 +153,17 @@ func (p *Parser) printStatement() Stmt {
 	return NewExpressionStmt(expr)
 }
 
+func (p *Parser) returnStatement() Stmt {
+	keyword := p.previous()
+	var value Expr
+	if !p.check(scanner.SEMICOLON) {
+		value = p.expression()
+	}
+	p.consume(scanner.SEMICOLON, "Expect ';' after return value.")
+
+	return NewReturnStmt(keyword, value)
+}
+
 func (p *Parser) varDeclaration() Stmt {
 	name := p.consume(scanner.IDENTIFIER, "Expect variable name.")
 
@@ -169,6 +189,34 @@ func (p *Parser) expressionStatement() Stmt {
 	expr := p.expression()
 	p.consume(scanner.SEMICOLON, "Expect ';' after value.")
 	return NewPrintStmt(expr)
+}
+
+func (p *Parser) function(kind string) FunctionStmt {
+	name := p.consume(scanner.IDENTIFIER, "Expect "+kind+" name.")
+
+	p.consume(scanner.LEFT_PAREN, "Expect '(' after "+kind+" name.")
+	parameters := make([]scanner.Token, 0)
+	if !p.check(scanner.RIGHT_PAREN) {
+		parameters = p.addFunctionParameter(parameters)
+
+		for p.match(scanner.COMMA) {
+			parameters = p.addFunctionParameter(parameters)
+		}
+	}
+	p.consume(scanner.RIGHT_PAREN, "Expect ')' after parameters.")
+
+	p.consume(scanner.LEFT_BRACE, "Expect '{' before "+kind+" body.")
+	body := p.block()
+	return NewFunctionStmt(name, parameters, body)
+}
+
+func (p *Parser) addFunctionParameter(parameters []scanner.Token) []scanner.Token {
+	if len(parameters) >= maxArgumentCount {
+		_ = p.error(p.peek(), fmt.Sprintf("Can't have more than %d parameters.", maxArgumentCount))
+	}
+
+	param := p.consume(scanner.IDENTIFIER, "Expect parameter name.")
+	return append(parameters, param)
 }
 
 func (p *Parser) block() []Stmt {
@@ -280,7 +328,44 @@ func (p *Parser) unary() Expr {
 		return NewUnaryExpr(operator, right)
 	}
 
-	return p.primary()
+	return p.call()
+}
+
+func (p *Parser) call() Expr {
+	expr := p.primary()
+
+	for {
+		if p.match(scanner.LEFT_PAREN) {
+			expr = p.finishCall(expr)
+		} else {
+			break
+		}
+	}
+
+	return expr
+}
+
+func (p *Parser) finishCall(callee Expr) Expr {
+	arguments := make([]Expr, 0)
+
+	if !p.check(scanner.RIGHT_PAREN) {
+		arguments = p.addCallArgument(arguments)
+
+		for p.match(scanner.COMMA) {
+			arguments = p.addCallArgument(arguments)
+		}
+	}
+
+	paren := p.consume(scanner.RIGHT_PAREN, "Expect ')' after arguments.")
+	return NewCallExpr(callee, paren, arguments)
+}
+
+func (p *Parser) addCallArgument(arguments []Expr) []Expr {
+	if len(arguments) > maxArgumentCount {
+		_ = p.error(p.peek(), fmt.Sprintf("Can't have more than %d arguments.", maxArgumentCount))
+	}
+
+	return append(arguments, p.expression())
 }
 
 func (p *Parser) primary() Expr {

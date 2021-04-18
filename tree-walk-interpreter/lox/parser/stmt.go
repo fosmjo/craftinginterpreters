@@ -11,8 +11,10 @@ type Stmt interface {
 type StmtVisitor interface {
     VisitBlockStmt(BlockStmt) interface{}
     VisitExpressionStmt(ExpressionStmt) interface{}
+    VisitFunctionStmt(FunctionStmt) interface{}
     VisitIfStmt(IfStmt) interface{}
     VisitPrintStmt(PrintStmt) interface{}
+    VisitReturnStmt(ReturnStmt) interface{}
     VisitVarStmt(VarStmt) interface{}
     VisitWhileStmt(WhileStmt) interface{}
 }
@@ -45,6 +47,24 @@ func (stmt ExpressionStmt) Accept(visitor StmtVisitor) interface{} {
     return visitor.VisitExpressionStmt(stmt)
 }
 
+type FunctionStmt struct {
+    Name scanner.Token
+    Params []scanner.Token
+    Body []Stmt
+}
+
+func NewFunctionStmt(name scanner.Token, params []scanner.Token, body []Stmt) FunctionStmt {
+    return FunctionStmt{
+        Name: name,
+        Params: params,
+        Body: body,
+    }
+}
+
+func (stmt FunctionStmt) Accept(visitor StmtVisitor) interface{} {
+    return visitor.VisitFunctionStmt(stmt)
+}
+
 type IfStmt struct {
     Condition Expr
     ThenBranch Stmt
@@ -75,6 +95,22 @@ func NewPrintStmt(expression Expr) PrintStmt {
 
 func (stmt PrintStmt) Accept(visitor StmtVisitor) interface{} {
     return visitor.VisitPrintStmt(stmt)
+}
+
+type ReturnStmt struct {
+    Keyword scanner.Token
+    Value Expr
+}
+
+func NewReturnStmt(keyword scanner.Token, value Expr) ReturnStmt {
+    return ReturnStmt{
+        Keyword: keyword,
+        Value: value,
+    }
+}
+
+func (stmt ReturnStmt) Accept(visitor StmtVisitor) interface{} {
+    return visitor.VisitReturnStmt(stmt)
 }
 
 type VarStmt struct {

@@ -14,3 +14,7 @@ func (re RuntimeError) Token() scanner.Token {
 func (re RuntimeError) Error() string {
 	return re.msg + re.token.Lexeme
 }
+
+type Return struct {
+	value interface{}
+}
