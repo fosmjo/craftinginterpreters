@@ -62,6 +62,8 @@ func (p *Parser) declaration() Stmt {
 	}()
 
 	switch {
+	case p.match(scanner.CLASS):
+		return p.classDeclaration()
 	case p.match(scanner.FUN):
 		return p.function("function")
 	case p.match(scanner.VAR):
@@ -69,6 +71,19 @@ func (p *Parser) declaration() Stmt {
 	}
 
 	return p.statement()
+}
+
+func (p *Parser) classDeclaration() Stmt {
+	name := p.consume(scanner.IDENTIFIER, "Expect class name.")
+	p.consume(scanner.LEFT_BRACE, "Expect '{' before class body.")
+
+	methods := make([]FunctionStmt, 0)
+	for !p.check(scanner.RIGHT_BRACE) && !p.isAtEnd() {
+		methods = append(methods, p.function("method"))
+	}
+
+	p.consume(scanner.RIGHT_BRACE, "Expect '}' after class body.")
+	return NewClassStmt(name, methods)
 }
 
 func (p *Parser) statement() Stmt {
@@ -238,12 +253,14 @@ func (p *Parser) assignment() Expr {
 		value := p.assignment()
 
 		if varExpr, ok := expr.(VariableExpr); ok {
-			name := varExpr.Name
-			return NewAssignExpr(name, value)
+			return NewAssignExpr(varExpr.Name, value)
 		}
 
-		err := p.error(equals, "Invalid assignment target.")
-		panic(err)
+		if getExpr, ok := expr.(GetExpr); ok {
+			return NewSetExpr(getExpr.Object, getExpr.Name, value)
+		}
+
+		_ = p.error(equals, "Invalid assignment target.")
 	}
 
 	return expr
@@ -337,6 +354,9 @@ func (p *Parser) call() Expr {
 	for {
 		if p.match(scanner.LEFT_PAREN) {
 			expr = p.finishCall(expr)
+		} else if p.match(scanner.DOT) {
+			name := p.consume(scanner.IDENTIFIER, "Excpect property name after '.'.")
+			expr = NewGetExpr(expr, name)
 		} else {
 			break
 		}
@@ -378,6 +398,8 @@ func (p *Parser) primary() Expr {
 		return NewLiteralExpr(nil)
 	case p.match(scanner.NUMBER, scanner.STRING):
 		return NewLiteralExpr(p.previous().Literal)
+	case p.match(scanner.THIS):
+		return NewThisExpr(p.previous())
 	case p.match(scanner.IDENTIFIER):
 		return NewVariableExpr(p.previous())
 	case p.match(scanner.LEFT_PAREN):

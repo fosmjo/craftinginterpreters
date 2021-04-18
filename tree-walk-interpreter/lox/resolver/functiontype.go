@@ -5,6 +5,8 @@ package resolver
 type FunctionType int
 
 const (
-	NONE FunctionType = iota
-	FUNCTION
+	FunctionTypeNone FunctionType = iota
+	FunctionTypeFunction
+	FunctionTypeInitializer
+	FunctionTypeMethod
 )

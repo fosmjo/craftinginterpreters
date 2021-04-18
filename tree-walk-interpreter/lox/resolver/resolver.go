@@ -10,6 +10,7 @@ type Resolver struct {
 	interpreter     *interpreter.Interpreter
 	scopes          *stack
 	currentFunction FunctionType
+	currentClass    ClassType
 	lox             loxer
 }
 
@@ -22,7 +23,8 @@ func NewResolver(interpreter *interpreter.Interpreter, lox loxer) *Resolver {
 	return &Resolver{
 		interpreter:     interpreter,
 		scopes:          stack,
-		currentFunction: NONE,
+		currentFunction: FunctionTypeNone,
+		currentClass:    ClassTypeNone,
 		lox:             lox,
 	}
 }
@@ -34,6 +36,29 @@ func (r *Resolver) VisitBlockStmt(stmt parser.BlockStmt) interface{} {
 	return nil
 }
 
+func (r *Resolver) VisitClassStmt(stmt parser.ClassStmt) interface{} {
+	enclosingClass := r.currentClass
+	r.currentClass = ClassTypeClass
+
+	r.declare(stmt.Name)
+	r.define(stmt.Name)
+
+	r.beginScope()
+	r.scopes.Peek()["this"] = true
+
+	for _, m := range stmt.Methods {
+		funType := FunctionTypeMethod
+		if m.Name.Lexeme == "init" {
+			funType = FunctionTypeInitializer
+		}
+		r.resolveFunction(m, funType)
+	}
+
+	r.endScope()
+	r.currentClass = enclosingClass
+	return nil
+}
+
 func (r *Resolver) VisitExpressionStmt(stmt parser.ExpressionStmt) interface{} {
 	r.resolveExpr(stmt.Expression)
 	return nil
@@ -42,7 +67,7 @@ func (r *Resolver) VisitExpressionStmt(stmt parser.ExpressionStmt) interface{} {
 func (r *Resolver) VisitFunctionStmt(stmt parser.FunctionStmt) interface{} {
 	r.declare(stmt.Name)
 	r.define(stmt.Name)
-	r.resolveFunction(stmt, FUNCTION)
+	r.resolveFunction(stmt, FunctionTypeFunction)
 	return nil
 }
 
@@ -61,11 +86,14 @@ func (r *Resolver) VisitPrintStmt(stmt parser.PrintStmt) interface{} {
 }
 
 func (r *Resolver) VisitReturnStmt(stmt parser.ReturnStmt) interface{} {
-	if r.currentFunction == NONE {
+	if r.currentFunction == FunctionTypeNone {
 		r.lox.ErrorWithToken(stmt.Keyword, "Can't return from top-level code.")
 	}
 
 	if stmt.Value != nil {
+		if r.currentFunction == FunctionTypeInitializer {
+			r.lox.ErrorWithToken(stmt.Keyword, "Can't return a value from an initializer.")
+		}
 		r.resolveExpr(stmt.Value)
 	}
 	return nil
@@ -106,6 +134,11 @@ func (r *Resolver) VisitCallExpr(expr parser.CallExpr) interface{} {
 	return nil
 }
 
+func (r *Resolver) VisitGetExpr(expr parser.GetExpr) interface{} {
+	r.resolveExpr(expr.Object)
+	return nil
+}
+
 func (r *Resolver) VisitGroupingExpr(expr parser.GroupingExpr) interface{} {
 	r.resolveExpr(expr.Expression)
 	return nil
@@ -118,6 +151,22 @@ func (r *Resolver) VisitLiteralExpr(expr parser.LiteralExpr) interface{} {
 func (r *Resolver) VisitLogicalExpr(expr parser.LogicalExpr) interface{} {
 	r.resolveExpr(expr.Left)
 	r.resolveExpr(expr.Right)
+	return nil
+}
+
+func (r *Resolver) VisitSetExpr(expr parser.SetExpr) interface{} {
+	r.resolveExpr(expr.Value)
+	r.resolveExpr(expr.Object)
+	return nil
+}
+
+func (r *Resolver) VisitThisExpr(expr parser.ThisExpr) interface{} {
+	if r.currentClass == ClassTypeNone {
+		r.lox.ErrorWithToken(expr.Keyword, "Can't use 'this' outside of a class.")
+		return nil
+	}
+
+	r.resolveLocal(expr, expr.Keyword)
 	return nil
 }
 

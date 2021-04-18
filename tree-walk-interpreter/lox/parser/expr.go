@@ -12,9 +12,12 @@ type ExprVisitor interface {
     VisitAssignExpr(AssignExpr) interface{}
     VisitBinaryExpr(BinaryExpr) interface{}
     VisitCallExpr(CallExpr) interface{}
+    VisitGetExpr(GetExpr) interface{}
     VisitGroupingExpr(GroupingExpr) interface{}
     VisitLiteralExpr(LiteralExpr) interface{}
     VisitLogicalExpr(LogicalExpr) interface{}
+    VisitSetExpr(SetExpr) interface{}
+    VisitThisExpr(ThisExpr) interface{}
     VisitUnaryExpr(UnaryExpr) interface{}
     VisitVariableExpr(VariableExpr) interface{}
 }
@@ -71,6 +74,22 @@ func (expr CallExpr) Accept(visitor ExprVisitor) interface{} {
     return visitor.VisitCallExpr(expr)
 }
 
+type GetExpr struct {
+    Object Expr
+    Name scanner.Token
+}
+
+func NewGetExpr(object Expr, name scanner.Token) GetExpr {
+    return GetExpr{
+        Object: object,
+        Name: name,
+    }
+}
+
+func (expr GetExpr) Accept(visitor ExprVisitor) interface{} {
+    return visitor.VisitGetExpr(expr)
+}
+
 type GroupingExpr struct {
     Expression Expr
 }
@@ -115,6 +134,38 @@ func NewLogicalExpr(left Expr, operator scanner.Token, right Expr) LogicalExpr {
 
 func (expr LogicalExpr) Accept(visitor ExprVisitor) interface{} {
     return visitor.VisitLogicalExpr(expr)
+}
+
+type SetExpr struct {
+    Object Expr
+    Name scanner.Token
+    Value Expr
+}
+
+func NewSetExpr(object Expr, name scanner.Token, value Expr) SetExpr {
+    return SetExpr{
+        Object: object,
+        Name: name,
+        Value: value,
+    }
+}
+
+func (expr SetExpr) Accept(visitor ExprVisitor) interface{} {
+    return visitor.VisitSetExpr(expr)
+}
+
+type ThisExpr struct {
+    Keyword scanner.Token
+}
+
+func NewThisExpr(keyword scanner.Token) ThisExpr {
+    return ThisExpr{
+        Keyword: keyword,
+    }
+}
+
+func (expr ThisExpr) Accept(visitor ExprVisitor) interface{} {
+    return visitor.VisitThisExpr(expr)
 }
 
 type UnaryExpr struct {

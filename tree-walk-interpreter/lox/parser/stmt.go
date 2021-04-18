@@ -11,6 +11,7 @@ type Stmt interface {
 type StmtVisitor interface {
     VisitBlockStmt(BlockStmt) interface{}
     VisitExpressionStmt(ExpressionStmt) interface{}
+    VisitClassStmt(ClassStmt) interface{}
     VisitFunctionStmt(FunctionStmt) interface{}
     VisitIfStmt(IfStmt) interface{}
     VisitPrintStmt(PrintStmt) interface{}
@@ -45,6 +46,22 @@ func NewExpressionStmt(expression Expr) ExpressionStmt {
 
 func (stmt ExpressionStmt) Accept(visitor StmtVisitor) interface{} {
     return visitor.VisitExpressionStmt(stmt)
+}
+
+type ClassStmt struct {
+    Name scanner.Token
+    Methods []FunctionStmt
+}
+
+func NewClassStmt(name scanner.Token, methods []FunctionStmt) ClassStmt {
+    return ClassStmt{
+        Name: name,
+        Methods: methods,
+    }
+}
+
+func (stmt ClassStmt) Accept(visitor StmtVisitor) interface{} {
+    return visitor.VisitClassStmt(stmt)
 }
 
 type FunctionStmt struct {

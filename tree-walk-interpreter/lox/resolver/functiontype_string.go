@@ -8,13 +8,15 @@ func _() {
 	// An "invalid array index" compiler error signifies that the constant values have changed.
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
-	_ = x[NONE-0]
-	_ = x[FUNCTION-1]
+	_ = x[FunctionTypeNone-0]
+	_ = x[FunctionTypeFunction-1]
+	_ = x[FunctionTypeInitializer-2]
+	_ = x[FunctionTypeMethod-3]
 }
 
-const _FunctionType_name = "NONEFUNCTION"
+const _FunctionType_name = "FunctionTypeNoneFunctionTypeFunctionFunctionTypeInitializerFunctionTypeMethod"
 
-var _FunctionType_index = [...]uint8{0, 4, 12}
+var _FunctionType_index = [...]uint8{0, 16, 36, 59, 77}
 
 func (i FunctionType) String() string {
 	if i < 0 || i >= FunctionType(len(_FunctionType_index)-1) {

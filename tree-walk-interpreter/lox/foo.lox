@@ -1,10 +1,10 @@
-var a = "global";
-{
-  fun showA() {
-    print a;
+class Bacon {
+  init() {
+    this.a = 1;
   }
-
-  showA();
-  var a = "block";
-  showA();
+  eat(){
+    return this.a;
+  }
 }
+
+print Bacon().eat(); // Prints "Crunch crunch crunch!".

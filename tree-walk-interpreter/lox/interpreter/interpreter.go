@@ -118,6 +118,18 @@ func (i *Interpreter) VisitCallExpr(expr parser.CallExpr) interface{} {
 	return function.Call(i, arguments)
 }
 
+func (i *Interpreter) VisitGetExpr(expr parser.GetExpr) interface{} {
+	object := i.evaluate(expr.Object)
+
+	instance, ok := object.(*Instance)
+	if !ok {
+		err := RuntimeError{token: expr.Name, msg: "Only instances have properties."}
+		panic(err)
+	}
+
+	return instance.Get(expr.Name)
+}
+
 func (i *Interpreter) VisitGroupingExpr(expr parser.GroupingExpr) interface{} {
 	return i.evaluate(expr.Expression)
 }
@@ -140,6 +152,24 @@ func (i *Interpreter) VisitLogicalExpr(expr parser.LogicalExpr) interface{} {
 	}
 
 	return i.evaluate(expr.Right)
+}
+
+func (i *Interpreter) VisitSetExpr(expr parser.SetExpr) interface{} {
+	object := i.evaluate(expr.Object)
+
+	instance, ok := object.(*Instance)
+	if !ok {
+		err := RuntimeError{token: expr.Name, msg: "Only instances have fields"}
+		panic(err)
+	}
+
+	value := i.evaluate(expr.Value)
+	instance.Set(expr.Name, value)
+	return value
+}
+
+func (i *Interpreter) VisitThisExpr(expr parser.ThisExpr) interface{} {
+	return i.lookUpVariable(expr.Keyword, expr)
 }
 
 func (i *Interpreter) VisitUnaryExpr(expr parser.UnaryExpr) interface{} {
@@ -179,7 +209,7 @@ func (i *Interpreter) VisitExpressionStmt(stmt parser.ExpressionStmt) interface{
 }
 
 func (i *Interpreter) VisitFunctionStmt(stmt parser.FunctionStmt) interface{} {
-	function := NewFunction(stmt, i.env)
+	function := NewFunction(stmt, i.env, false)
 	i.env.Define(stmt.Name.Lexeme, function)
 	return nil
 }
@@ -228,6 +258,20 @@ func (i *Interpreter) VisitWhileStmt(stmt parser.WhileStmt) interface{} {
 func (i *Interpreter) VisitBlockStmt(stmt parser.BlockStmt) interface{} {
 	env := NewEnvironment(WithEnclosing(i.env))
 	i.executeBlock(stmt.Statements, env)
+	return nil
+}
+
+func (i *Interpreter) VisitClassStmt(stmt parser.ClassStmt) interface{} {
+	i.env.Define(stmt.Name.Lexeme, nil)
+
+	methods := make(map[string]*Function)
+	for _, m := range stmt.Methods {
+		fn := NewFunction(m, i.env, m.Name.Lexeme == "init")
+		methods[m.Name.Lexeme] = fn
+	}
+
+	class := NewClass(stmt.Name.Lexeme, methods)
+	i.env.Assign(stmt.Name, class)
 	return nil
 }
 
