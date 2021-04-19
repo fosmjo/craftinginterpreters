@@ -172,7 +172,7 @@ func (p *Parser) ifStatement() Stmt {
 func (p *Parser) printStatement() Stmt {
 	expr := p.expression()
 	p.consume(scanner.SEMICOLON, "Expect ';' after value.")
-	return NewExpressionStmt(expr)
+	return NewPrintStmt(expr)
 }
 
 func (p *Parser) returnStatement() Stmt {
@@ -210,7 +210,7 @@ func (p *Parser) whileStatement() Stmt {
 func (p *Parser) expressionStatement() Stmt {
 	expr := p.expression()
 	p.consume(scanner.SEMICOLON, "Expect ';' after value.")
-	return NewPrintStmt(expr)
+	return NewExpressionStmt(expr)
 }
 
 func (p *Parser) function(kind string) *FunctionStmt {

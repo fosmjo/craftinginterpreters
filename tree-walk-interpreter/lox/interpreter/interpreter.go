@@ -217,8 +217,7 @@ func (i *Interpreter) VisitAssignExpr(expr *parser.AssignExpr) interface{} {
 }
 
 func (i *Interpreter) VisitExpressionStmt(stmt *parser.ExpressionStmt) interface{} {
-	ret := i.evaluate(stmt.Expression)
-	fmt.Println(i.stringify(ret))
+	i.evaluate(stmt.Expression)
 	return nil
 }
 
@@ -239,7 +238,8 @@ func (i *Interpreter) VisitIfStmt(stmt *parser.IfStmt) interface{} {
 }
 
 func (i *Interpreter) VisitPrintStmt(stmt *parser.PrintStmt) interface{} {
-	i.evaluate(stmt.Expression)
+	ret := i.evaluate(stmt.Expression)
+	fmt.Println(i.stringify(ret))
 	return nil
 }
 
