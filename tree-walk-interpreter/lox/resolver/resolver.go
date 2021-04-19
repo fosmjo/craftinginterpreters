@@ -37,11 +37,25 @@ func (r *Resolver) VisitBlockStmt(stmt parser.BlockStmt) interface{} {
 }
 
 func (r *Resolver) VisitClassStmt(stmt parser.ClassStmt) interface{} {
+	if (stmt.Superclass != parser.VariableExpr{}) {
+		r.beginScope()
+		r.scopes.Peek()["super"] = true
+	}
+
 	enclosingClass := r.currentClass
 	r.currentClass = ClassTypeClass
 
 	r.declare(stmt.Name)
 	r.define(stmt.Name)
+
+	if (stmt.Superclass != parser.VariableExpr{}) && stmt.Name.Lexeme == stmt.Superclass.Name.Lexeme {
+		r.lox.ErrorWithToken(stmt.Superclass.Name, "A class can't inherit from itself.")
+	}
+
+	if (stmt.Superclass != parser.VariableExpr{}) {
+		r.currentClass = ClassTypeSubclass
+		r.resolveExpr(stmt.Superclass)
+	}
 
 	r.beginScope()
 	r.scopes.Peek()["this"] = true
@@ -55,6 +69,11 @@ func (r *Resolver) VisitClassStmt(stmt parser.ClassStmt) interface{} {
 	}
 
 	r.endScope()
+
+	if (stmt.Superclass != parser.VariableExpr{}) {
+		r.endScope()
+	}
+
 	r.currentClass = enclosingClass
 	return nil
 }
@@ -157,6 +176,18 @@ func (r *Resolver) VisitLogicalExpr(expr parser.LogicalExpr) interface{} {
 func (r *Resolver) VisitSetExpr(expr parser.SetExpr) interface{} {
 	r.resolveExpr(expr.Value)
 	r.resolveExpr(expr.Object)
+	return nil
+}
+
+func (r *Resolver) VisitSuperExpr(expr parser.SuperExpr) interface{} {
+	switch r.currentClass {
+	case ClassTypeNone:
+		r.lox.ErrorWithToken(expr.Keyword, "Can't use 'super' outside of a class.")
+	case ClassTypeClass:
+		r.lox.ErrorWithToken(expr.Keyword, "Can't use 'super' in a class with no superclass.")
+	}
+
+	r.resolveLocal(expr, expr.Keyword)
 	return nil
 }
 

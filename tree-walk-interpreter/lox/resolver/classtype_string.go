@@ -10,11 +10,12 @@ func _() {
 	var x [1]struct{}
 	_ = x[ClassTypeNone-0]
 	_ = x[ClassTypeClass-1]
+	_ = x[ClassTypeSubclass-2]
 }
 
-const _ClassType_name = "ClassTypeNoneClassTypeClass"
+const _ClassType_name = "ClassTypeNoneClassTypeClassClassTypeSubclass"
 
-var _ClassType_index = [...]uint8{0, 13, 27}
+var _ClassType_index = [...]uint8{0, 13, 27, 44}
 
 func (i ClassType) String() string {
 	if i < 0 || i >= ClassType(len(_ClassType_index)-1) {

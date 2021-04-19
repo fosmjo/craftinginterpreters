@@ -17,6 +17,7 @@ type ExprVisitor interface {
     VisitLiteralExpr(LiteralExpr) interface{}
     VisitLogicalExpr(LogicalExpr) interface{}
     VisitSetExpr(SetExpr) interface{}
+    VisitSuperExpr(SuperExpr) interface{}
     VisitThisExpr(ThisExpr) interface{}
     VisitUnaryExpr(UnaryExpr) interface{}
     VisitVariableExpr(VariableExpr) interface{}
@@ -152,6 +153,22 @@ func NewSetExpr(object Expr, name scanner.Token, value Expr) SetExpr {
 
 func (expr SetExpr) Accept(visitor ExprVisitor) interface{} {
     return visitor.VisitSetExpr(expr)
+}
+
+type SuperExpr struct {
+    Keyword scanner.Token
+    Method scanner.Token
+}
+
+func NewSuperExpr(keyword scanner.Token, method scanner.Token) SuperExpr {
+    return SuperExpr{
+        Keyword: keyword,
+        Method: method,
+    }
+}
+
+func (expr SuperExpr) Accept(visitor ExprVisitor) interface{} {
+    return visitor.VisitSuperExpr(expr)
 }
 
 type ThisExpr struct {

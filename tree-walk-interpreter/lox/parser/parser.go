@@ -75,6 +75,13 @@ func (p *Parser) declaration() Stmt {
 
 func (p *Parser) classDeclaration() Stmt {
 	name := p.consume(scanner.IDENTIFIER, "Expect class name.")
+
+	var superclass VariableExpr
+	if p.match(scanner.LESS) {
+		p.consume(scanner.IDENTIFIER, "Expect superclass name.")
+		superclass = NewVariableExpr(p.previous())
+	}
+
 	p.consume(scanner.LEFT_BRACE, "Expect '{' before class body.")
 
 	methods := make([]FunctionStmt, 0)
@@ -83,7 +90,7 @@ func (p *Parser) classDeclaration() Stmt {
 	}
 
 	p.consume(scanner.RIGHT_BRACE, "Expect '}' after class body.")
-	return NewClassStmt(name, methods)
+	return NewClassStmt(name, superclass, methods)
 }
 
 func (p *Parser) statement() Stmt {
@@ -398,6 +405,11 @@ func (p *Parser) primary() Expr {
 		return NewLiteralExpr(nil)
 	case p.match(scanner.NUMBER, scanner.STRING):
 		return NewLiteralExpr(p.previous().Literal)
+	case p.match(scanner.SUPER):
+		keyword := p.previous()
+		p.consume(scanner.DOT, "Expect '.' after 'super'.")
+		method := p.consume(scanner.IDENTIFIER, "Expect superclass method name.")
+		return NewSuperExpr(keyword, method)
 	case p.match(scanner.THIS):
 		return NewThisExpr(p.previous())
 	case p.match(scanner.IDENTIFIER):

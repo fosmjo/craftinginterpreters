@@ -168,6 +168,20 @@ func (i *Interpreter) VisitSetExpr(expr parser.SetExpr) interface{} {
 	return value
 }
 
+func (i *Interpreter) VisitSuperExpr(expr parser.SuperExpr) interface{} {
+	distance := i.locals[expr]
+	superclass := i.env.GetAt(distance, "super").(*Class)
+	object := i.env.GetAt(distance-1, "this").(*Instance)
+
+	method := superclass.findMethod(expr.Method.Lexeme)
+	if method == nil {
+		err := RuntimeError{token: expr.Method, msg: "Undefined property '" + expr.Method.Lexeme + "'."}
+		panic(err)
+	}
+
+	return method.bind(object)
+}
+
 func (i *Interpreter) VisitThisExpr(expr parser.ThisExpr) interface{} {
 	return i.lookUpVariable(expr.Keyword, expr)
 }
@@ -262,7 +276,24 @@ func (i *Interpreter) VisitBlockStmt(stmt parser.BlockStmt) interface{} {
 }
 
 func (i *Interpreter) VisitClassStmt(stmt parser.ClassStmt) interface{} {
+	var superclass *Class
+
+	if (stmt.Superclass != parser.VariableExpr{}) {
+		class := i.evaluate(stmt.Superclass)
+		var ok bool
+		superclass, ok = class.(*Class)
+		if !ok {
+			err := RuntimeError{token: stmt.Superclass.Name, msg: "Superclass must be a class."}
+			panic(err)
+		}
+	}
+
 	i.env.Define(stmt.Name.Lexeme, nil)
+
+	if (stmt.Superclass != parser.VariableExpr{}) {
+		i.env = NewEnvironment(WithEnclosing(i.env))
+		i.env.Define("super", superclass)
+	}
 
 	methods := make(map[string]*Function)
 	for _, m := range stmt.Methods {
@@ -270,7 +301,12 @@ func (i *Interpreter) VisitClassStmt(stmt parser.ClassStmt) interface{} {
 		methods[m.Name.Lexeme] = fn
 	}
 
-	class := NewClass(stmt.Name.Lexeme, methods)
+	class := NewClass(stmt.Name.Lexeme, methods, superclass)
+
+	if (stmt.Superclass != parser.VariableExpr{}) {
+		i.env = i.env.enclosing
+	}
+
 	i.env.Assign(stmt.Name, class)
 	return nil
 }

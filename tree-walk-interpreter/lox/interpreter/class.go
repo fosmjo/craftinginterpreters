@@ -1,12 +1,13 @@
 package interpreter
 
 type Class struct {
-	name    string
-	methods map[string]*Function
+	name       string
+	methods    map[string]*Function
+	superclass *Class
 }
 
-func NewClass(name string, methods map[string]*Function) *Class {
-	return &Class{name: name, methods: methods}
+func NewClass(name string, methods map[string]*Function, superclass *Class) *Class {
+	return &Class{name: name, methods: methods, superclass: superclass}
 }
 
 func (c *Class) Arity() int {
@@ -31,5 +32,11 @@ func (c *Class) String() string {
 }
 
 func (c *Class) findMethod(name string) *Function {
-	return c.methods[name]
+	if m, ok := c.methods[name]; ok {
+		return m
+	}
+	if c.superclass != nil {
+		return c.superclass.findMethod(name)
+	}
+	return nil
 }

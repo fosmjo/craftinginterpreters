@@ -50,12 +50,14 @@ func (stmt ExpressionStmt) Accept(visitor StmtVisitor) interface{} {
 
 type ClassStmt struct {
     Name scanner.Token
+    Superclass VariableExpr
     Methods []FunctionStmt
 }
 
-func NewClassStmt(name scanner.Token, methods []FunctionStmt) ClassStmt {
+func NewClassStmt(name scanner.Token, superclass VariableExpr, methods []FunctionStmt) ClassStmt {
     return ClassStmt{
         Name: name,
+        Superclass: superclass,
         Methods: methods,
     }
 }

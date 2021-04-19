@@ -97,6 +97,7 @@ func main() {
 			"Literal  : value interface{}",
 			"Logical  : left Expr, operator scanner.Token, right Expr",
 			"Set      : object Expr, name scanner.Token, value Expr",
+			"Super    : keyword scanner.Token, method scanner.Token",
 			"This     : keyword scanner.Token",
 			"Unary    : operator scanner.Token, right Expr",
 			"Variable : name scanner.Token",
@@ -108,7 +109,7 @@ func main() {
 		[]string{
 			"Block      : statements []Stmt",
 			"Expression : expression Expr",
-			"Class      : name scanner.Token, methods []FunctionStmt",
+			"Class      : name scanner.Token, superclass VariableExpr, methods []FunctionStmt",
 			"Function   : name scanner.Token, params []scanner.Token, body []Stmt",
 			"If         : condition Expr, thenBranch Stmt, elseBranch Stmt",
 			"Print      : expression Expr",
