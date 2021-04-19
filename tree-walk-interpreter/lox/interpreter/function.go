@@ -4,11 +4,11 @@ import "github.com/fosmjo/lox/parser"
 
 type Function struct {
 	closure       *Environment
-	declaration   parser.FunctionStmt
+	declaration   *parser.FunctionStmt
 	isInitializer bool
 }
 
-func NewFunction(declaration parser.FunctionStmt, closure *Environment, isInitializer bool) *Function {
+func NewFunction(declaration *parser.FunctionStmt, closure *Environment, isInitializer bool) *Function {
 	return &Function{declaration: declaration, closure: closure, isInitializer: isInitializer}
 }
 

@@ -29,15 +29,15 @@ func NewResolver(interpreter *interpreter.Interpreter, lox loxer) *Resolver {
 	}
 }
 
-func (r *Resolver) VisitBlockStmt(stmt parser.BlockStmt) interface{} {
+func (r *Resolver) VisitBlockStmt(stmt *parser.BlockStmt) interface{} {
 	r.beginScope()
 	r.Resolve(stmt.Statements)
 	r.endScope()
 	return nil
 }
 
-func (r *Resolver) VisitClassStmt(stmt parser.ClassStmt) interface{} {
-	if (stmt.Superclass != parser.VariableExpr{}) {
+func (r *Resolver) VisitClassStmt(stmt *parser.ClassStmt) interface{} {
+	if stmt.Superclass != nil {
 		r.beginScope()
 		r.scopes.Peek()["super"] = true
 	}
@@ -48,11 +48,11 @@ func (r *Resolver) VisitClassStmt(stmt parser.ClassStmt) interface{} {
 	r.declare(stmt.Name)
 	r.define(stmt.Name)
 
-	if (stmt.Superclass != parser.VariableExpr{}) && stmt.Name.Lexeme == stmt.Superclass.Name.Lexeme {
+	if (stmt.Superclass != nil) && stmt.Name.Lexeme == stmt.Superclass.Name.Lexeme {
 		r.lox.ErrorWithToken(stmt.Superclass.Name, "A class can't inherit from itself.")
 	}
 
-	if (stmt.Superclass != parser.VariableExpr{}) {
+	if stmt.Superclass != nil {
 		r.currentClass = ClassTypeSubclass
 		r.resolveExpr(stmt.Superclass)
 	}
@@ -70,7 +70,7 @@ func (r *Resolver) VisitClassStmt(stmt parser.ClassStmt) interface{} {
 
 	r.endScope()
 
-	if (stmt.Superclass != parser.VariableExpr{}) {
+	if stmt.Superclass != nil {
 		r.endScope()
 	}
 
@@ -78,19 +78,19 @@ func (r *Resolver) VisitClassStmt(stmt parser.ClassStmt) interface{} {
 	return nil
 }
 
-func (r *Resolver) VisitExpressionStmt(stmt parser.ExpressionStmt) interface{} {
+func (r *Resolver) VisitExpressionStmt(stmt *parser.ExpressionStmt) interface{} {
 	r.resolveExpr(stmt.Expression)
 	return nil
 }
 
-func (r *Resolver) VisitFunctionStmt(stmt parser.FunctionStmt) interface{} {
+func (r *Resolver) VisitFunctionStmt(stmt *parser.FunctionStmt) interface{} {
 	r.declare(stmt.Name)
 	r.define(stmt.Name)
 	r.resolveFunction(stmt, FunctionTypeFunction)
 	return nil
 }
 
-func (r *Resolver) VisitIfStmt(stmt parser.IfStmt) interface{} {
+func (r *Resolver) VisitIfStmt(stmt *parser.IfStmt) interface{} {
 	r.resolveExpr(stmt.Condition)
 	r.resolveStmt(stmt.ThenBranch)
 	if stmt.ElseBranch != nil {
@@ -99,12 +99,12 @@ func (r *Resolver) VisitIfStmt(stmt parser.IfStmt) interface{} {
 	return nil
 }
 
-func (r *Resolver) VisitPrintStmt(stmt parser.PrintStmt) interface{} {
+func (r *Resolver) VisitPrintStmt(stmt *parser.PrintStmt) interface{} {
 	r.resolveExpr(stmt.Expression)
 	return nil
 }
 
-func (r *Resolver) VisitReturnStmt(stmt parser.ReturnStmt) interface{} {
+func (r *Resolver) VisitReturnStmt(stmt *parser.ReturnStmt) interface{} {
 	if r.currentFunction == FunctionTypeNone {
 		r.lox.ErrorWithToken(stmt.Keyword, "Can't return from top-level code.")
 	}
@@ -118,7 +118,7 @@ func (r *Resolver) VisitReturnStmt(stmt parser.ReturnStmt) interface{} {
 	return nil
 }
 
-func (r *Resolver) VisitVarStmt(stmt parser.VarStmt) interface{} {
+func (r *Resolver) VisitVarStmt(stmt *parser.VarStmt) interface{} {
 	r.declare(stmt.Name)
 	if stmt.Initializer != nil {
 		r.resolveExpr(stmt.Initializer)
@@ -127,25 +127,25 @@ func (r *Resolver) VisitVarStmt(stmt parser.VarStmt) interface{} {
 	return nil
 }
 
-func (r *Resolver) VisitWhileStmt(stmt parser.WhileStmt) interface{} {
+func (r *Resolver) VisitWhileStmt(stmt *parser.WhileStmt) interface{} {
 	r.resolveExpr(stmt.Condition)
 	r.resolveStmt(stmt.Body)
 	return nil
 }
 
-func (r *Resolver) VisitAssignExpr(expr parser.AssignExpr) interface{} {
+func (r *Resolver) VisitAssignExpr(expr *parser.AssignExpr) interface{} {
 	r.resolveExpr(expr.Value)
 	r.resolveLocal(expr, expr.Name)
 	return nil
 }
 
-func (r *Resolver) VisitBinaryExpr(expr parser.BinaryExpr) interface{} {
+func (r *Resolver) VisitBinaryExpr(expr *parser.BinaryExpr) interface{} {
 	r.resolveExpr(expr.Left)
 	r.resolveExpr(expr.Right)
 	return nil
 }
 
-func (r *Resolver) VisitCallExpr(expr parser.CallExpr) interface{} {
+func (r *Resolver) VisitCallExpr(expr *parser.CallExpr) interface{} {
 	r.resolveExpr(expr.Callee)
 	for _, arg := range expr.Arguments {
 		r.resolveExpr(arg)
@@ -153,33 +153,33 @@ func (r *Resolver) VisitCallExpr(expr parser.CallExpr) interface{} {
 	return nil
 }
 
-func (r *Resolver) VisitGetExpr(expr parser.GetExpr) interface{} {
+func (r *Resolver) VisitGetExpr(expr *parser.GetExpr) interface{} {
 	r.resolveExpr(expr.Object)
 	return nil
 }
 
-func (r *Resolver) VisitGroupingExpr(expr parser.GroupingExpr) interface{} {
+func (r *Resolver) VisitGroupingExpr(expr *parser.GroupingExpr) interface{} {
 	r.resolveExpr(expr.Expression)
 	return nil
 }
 
-func (r *Resolver) VisitLiteralExpr(expr parser.LiteralExpr) interface{} {
+func (r *Resolver) VisitLiteralExpr(expr *parser.LiteralExpr) interface{} {
 	return nil
 }
 
-func (r *Resolver) VisitLogicalExpr(expr parser.LogicalExpr) interface{} {
+func (r *Resolver) VisitLogicalExpr(expr *parser.LogicalExpr) interface{} {
 	r.resolveExpr(expr.Left)
 	r.resolveExpr(expr.Right)
 	return nil
 }
 
-func (r *Resolver) VisitSetExpr(expr parser.SetExpr) interface{} {
+func (r *Resolver) VisitSetExpr(expr *parser.SetExpr) interface{} {
 	r.resolveExpr(expr.Value)
 	r.resolveExpr(expr.Object)
 	return nil
 }
 
-func (r *Resolver) VisitSuperExpr(expr parser.SuperExpr) interface{} {
+func (r *Resolver) VisitSuperExpr(expr *parser.SuperExpr) interface{} {
 	switch r.currentClass {
 	case ClassTypeNone:
 		r.lox.ErrorWithToken(expr.Keyword, "Can't use 'super' outside of a class.")
@@ -191,7 +191,7 @@ func (r *Resolver) VisitSuperExpr(expr parser.SuperExpr) interface{} {
 	return nil
 }
 
-func (r *Resolver) VisitThisExpr(expr parser.ThisExpr) interface{} {
+func (r *Resolver) VisitThisExpr(expr *parser.ThisExpr) interface{} {
 	if r.currentClass == ClassTypeNone {
 		r.lox.ErrorWithToken(expr.Keyword, "Can't use 'this' outside of a class.")
 		return nil
@@ -201,12 +201,12 @@ func (r *Resolver) VisitThisExpr(expr parser.ThisExpr) interface{} {
 	return nil
 }
 
-func (r *Resolver) VisitUnaryExpr(expr parser.UnaryExpr) interface{} {
+func (r *Resolver) VisitUnaryExpr(expr *parser.UnaryExpr) interface{} {
 	r.resolveExpr(expr.Right)
 	return nil
 }
 
-func (r *Resolver) VisitVariableExpr(expr parser.VariableExpr) interface{} {
+func (r *Resolver) VisitVariableExpr(expr *parser.VariableExpr) interface{} {
 	if !r.scopes.IsEmpty() {
 		if v, ok := r.scopes.Peek()[expr.Name.Lexeme]; ok && !v {
 			r.lox.ErrorWithToken(expr.Name, "Can't read local variable in its own initializer.")
@@ -261,7 +261,7 @@ func (r *Resolver) Resolve(stmts []parser.Stmt) {
 	}
 }
 
-func (r *Resolver) resolveFunction(stmt parser.FunctionStmt, funType FunctionType) {
+func (r *Resolver) resolveFunction(stmt *parser.FunctionStmt, funType FunctionType) {
 	enclosingFunction := r.currentFunction
 	r.currentFunction = funType
 

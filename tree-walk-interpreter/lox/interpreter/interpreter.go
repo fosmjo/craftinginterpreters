@@ -48,7 +48,7 @@ func (i *Interpreter) Interpret(stmts []parser.Stmt) {
 	}
 }
 
-func (i *Interpreter) VisitBinaryExpr(expr parser.BinaryExpr) interface{} {
+func (i *Interpreter) VisitBinaryExpr(expr *parser.BinaryExpr) interface{} {
 	left := i.evaluate(expr.Left)
 	right := i.evaluate(expr.Right)
 
@@ -98,7 +98,7 @@ func (i *Interpreter) VisitBinaryExpr(expr parser.BinaryExpr) interface{} {
 	return nil
 }
 
-func (i *Interpreter) VisitCallExpr(expr parser.CallExpr) interface{} {
+func (i *Interpreter) VisitCallExpr(expr *parser.CallExpr) interface{} {
 	callee := i.evaluate(expr.Callee)
 
 	arguments := make([]interface{}, 0)
@@ -118,7 +118,7 @@ func (i *Interpreter) VisitCallExpr(expr parser.CallExpr) interface{} {
 	return function.Call(i, arguments)
 }
 
-func (i *Interpreter) VisitGetExpr(expr parser.GetExpr) interface{} {
+func (i *Interpreter) VisitGetExpr(expr *parser.GetExpr) interface{} {
 	object := i.evaluate(expr.Object)
 
 	instance, ok := object.(*Instance)
@@ -130,15 +130,15 @@ func (i *Interpreter) VisitGetExpr(expr parser.GetExpr) interface{} {
 	return instance.Get(expr.Name)
 }
 
-func (i *Interpreter) VisitGroupingExpr(expr parser.GroupingExpr) interface{} {
+func (i *Interpreter) VisitGroupingExpr(expr *parser.GroupingExpr) interface{} {
 	return i.evaluate(expr.Expression)
 }
 
-func (i *Interpreter) VisitLiteralExpr(expr parser.LiteralExpr) interface{} {
+func (i *Interpreter) VisitLiteralExpr(expr *parser.LiteralExpr) interface{} {
 	return expr.Value
 }
 
-func (i *Interpreter) VisitLogicalExpr(expr parser.LogicalExpr) interface{} {
+func (i *Interpreter) VisitLogicalExpr(expr *parser.LogicalExpr) interface{} {
 	left := i.evaluate(expr.Left)
 
 	if expr.Operator.Type == scanner.OR {
@@ -154,7 +154,7 @@ func (i *Interpreter) VisitLogicalExpr(expr parser.LogicalExpr) interface{} {
 	return i.evaluate(expr.Right)
 }
 
-func (i *Interpreter) VisitSetExpr(expr parser.SetExpr) interface{} {
+func (i *Interpreter) VisitSetExpr(expr *parser.SetExpr) interface{} {
 	object := i.evaluate(expr.Object)
 
 	instance, ok := object.(*Instance)
@@ -168,7 +168,7 @@ func (i *Interpreter) VisitSetExpr(expr parser.SetExpr) interface{} {
 	return value
 }
 
-func (i *Interpreter) VisitSuperExpr(expr parser.SuperExpr) interface{} {
+func (i *Interpreter) VisitSuperExpr(expr *parser.SuperExpr) interface{} {
 	distance := i.locals[expr]
 	superclass := i.env.GetAt(distance, "super").(*Class)
 	object := i.env.GetAt(distance-1, "this").(*Instance)
@@ -182,11 +182,11 @@ func (i *Interpreter) VisitSuperExpr(expr parser.SuperExpr) interface{} {
 	return method.bind(object)
 }
 
-func (i *Interpreter) VisitThisExpr(expr parser.ThisExpr) interface{} {
+func (i *Interpreter) VisitThisExpr(expr *parser.ThisExpr) interface{} {
 	return i.lookUpVariable(expr.Keyword, expr)
 }
 
-func (i *Interpreter) VisitUnaryExpr(expr parser.UnaryExpr) interface{} {
+func (i *Interpreter) VisitUnaryExpr(expr *parser.UnaryExpr) interface{} {
 	right := i.evaluate(expr.Right)
 
 	switch expr.Operator.Type {
@@ -199,11 +199,11 @@ func (i *Interpreter) VisitUnaryExpr(expr parser.UnaryExpr) interface{} {
 	}
 }
 
-func (i *Interpreter) VisitVariableExpr(expr parser.VariableExpr) interface{} {
+func (i *Interpreter) VisitVariableExpr(expr *parser.VariableExpr) interface{} {
 	return i.lookUpVariable(expr.Name, expr)
 }
 
-func (i *Interpreter) VisitAssignExpr(expr parser.AssignExpr) interface{} {
+func (i *Interpreter) VisitAssignExpr(expr *parser.AssignExpr) interface{} {
 	value := i.evaluate(expr.Value)
 
 	distance, ok := i.locals[expr]
@@ -216,19 +216,19 @@ func (i *Interpreter) VisitAssignExpr(expr parser.AssignExpr) interface{} {
 	return value
 }
 
-func (i *Interpreter) VisitExpressionStmt(stmt parser.ExpressionStmt) interface{} {
+func (i *Interpreter) VisitExpressionStmt(stmt *parser.ExpressionStmt) interface{} {
 	ret := i.evaluate(stmt.Expression)
 	fmt.Println(i.stringify(ret))
 	return nil
 }
 
-func (i *Interpreter) VisitFunctionStmt(stmt parser.FunctionStmt) interface{} {
+func (i *Interpreter) VisitFunctionStmt(stmt *parser.FunctionStmt) interface{} {
 	function := NewFunction(stmt, i.env, false)
 	i.env.Define(stmt.Name.Lexeme, function)
 	return nil
 }
 
-func (i *Interpreter) VisitIfStmt(stmt parser.IfStmt) interface{} {
+func (i *Interpreter) VisitIfStmt(stmt *parser.IfStmt) interface{} {
 	cond := i.evaluate(stmt.Condition)
 	if i.isTruthy(cond) {
 		i.execute(stmt.ThenBranch)
@@ -238,12 +238,12 @@ func (i *Interpreter) VisitIfStmt(stmt parser.IfStmt) interface{} {
 	return nil
 }
 
-func (i *Interpreter) VisitPrintStmt(stmt parser.PrintStmt) interface{} {
+func (i *Interpreter) VisitPrintStmt(stmt *parser.PrintStmt) interface{} {
 	i.evaluate(stmt.Expression)
 	return nil
 }
 
-func (i *Interpreter) VisitReturnStmt(stmt parser.ReturnStmt) interface{} {
+func (i *Interpreter) VisitReturnStmt(stmt *parser.ReturnStmt) interface{} {
 	var value interface{}
 	if stmt.Value != nil {
 		value = i.evaluate(stmt.Value)
@@ -253,7 +253,7 @@ func (i *Interpreter) VisitReturnStmt(stmt parser.ReturnStmt) interface{} {
 	panic(ret)
 }
 
-func (i *Interpreter) VisitVarStmt(stmt parser.VarStmt) interface{} {
+func (i *Interpreter) VisitVarStmt(stmt *parser.VarStmt) interface{} {
 	var value interface{}
 	if stmt.Initializer != nil {
 		value = i.evaluate(stmt.Initializer)
@@ -262,23 +262,23 @@ func (i *Interpreter) VisitVarStmt(stmt parser.VarStmt) interface{} {
 	return nil
 }
 
-func (i *Interpreter) VisitWhileStmt(stmt parser.WhileStmt) interface{} {
+func (i *Interpreter) VisitWhileStmt(stmt *parser.WhileStmt) interface{} {
 	for i.isTruthy(i.evaluate(stmt.Condition)) {
 		i.execute(stmt.Body)
 	}
 	return nil
 }
 
-func (i *Interpreter) VisitBlockStmt(stmt parser.BlockStmt) interface{} {
+func (i *Interpreter) VisitBlockStmt(stmt *parser.BlockStmt) interface{} {
 	env := NewEnvironment(WithEnclosing(i.env))
 	i.executeBlock(stmt.Statements, env)
 	return nil
 }
 
-func (i *Interpreter) VisitClassStmt(stmt parser.ClassStmt) interface{} {
+func (i *Interpreter) VisitClassStmt(stmt *parser.ClassStmt) interface{} {
 	var superclass *Class
 
-	if (stmt.Superclass != parser.VariableExpr{}) {
+	if stmt.Superclass != nil {
 		class := i.evaluate(stmt.Superclass)
 		var ok bool
 		superclass, ok = class.(*Class)
@@ -290,7 +290,7 @@ func (i *Interpreter) VisitClassStmt(stmt parser.ClassStmt) interface{} {
 
 	i.env.Define(stmt.Name.Lexeme, nil)
 
-	if (stmt.Superclass != parser.VariableExpr{}) {
+	if stmt.Superclass != nil {
 		i.env = NewEnvironment(WithEnclosing(i.env))
 		i.env.Define("super", superclass)
 	}
@@ -303,7 +303,7 @@ func (i *Interpreter) VisitClassStmt(stmt parser.ClassStmt) interface{} {
 
 	class := NewClass(stmt.Name.Lexeme, methods, superclass)
 
-	if (stmt.Superclass != parser.VariableExpr{}) {
+	if stmt.Superclass != nil {
 		i.env = i.env.enclosing
 	}
 

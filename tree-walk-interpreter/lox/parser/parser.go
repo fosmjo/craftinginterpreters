@@ -76,7 +76,7 @@ func (p *Parser) declaration() Stmt {
 func (p *Parser) classDeclaration() Stmt {
 	name := p.consume(scanner.IDENTIFIER, "Expect class name.")
 
-	var superclass VariableExpr
+	var superclass *VariableExpr
 	if p.match(scanner.LESS) {
 		p.consume(scanner.IDENTIFIER, "Expect superclass name.")
 		superclass = NewVariableExpr(p.previous())
@@ -84,7 +84,7 @@ func (p *Parser) classDeclaration() Stmt {
 
 	p.consume(scanner.LEFT_BRACE, "Expect '{' before class body.")
 
-	methods := make([]FunctionStmt, 0)
+	methods := make([]*FunctionStmt, 0)
 	for !p.check(scanner.RIGHT_BRACE) && !p.isAtEnd() {
 		methods = append(methods, p.function("method"))
 	}
@@ -213,7 +213,7 @@ func (p *Parser) expressionStatement() Stmt {
 	return NewPrintStmt(expr)
 }
 
-func (p *Parser) function(kind string) FunctionStmt {
+func (p *Parser) function(kind string) *FunctionStmt {
 	name := p.consume(scanner.IDENTIFIER, "Expect "+kind+" name.")
 
 	p.consume(scanner.LEFT_PAREN, "Expect '(' after "+kind+" name.")
@@ -259,11 +259,11 @@ func (p *Parser) assignment() Expr {
 		equals := p.previous()
 		value := p.assignment()
 
-		if varExpr, ok := expr.(VariableExpr); ok {
+		if varExpr, ok := expr.(*VariableExpr); ok {
 			return NewAssignExpr(varExpr.Name, value)
 		}
 
-		if getExpr, ok := expr.(GetExpr); ok {
+		if getExpr, ok := expr.(*GetExpr); ok {
 			return NewSetExpr(getExpr.Object, getExpr.Name, value)
 		}
 

@@ -31,7 +31,7 @@ func defineVisitor(w io.Writer, baseName string, types []string) {
 	for _, s := range types {
 		exprType := strings.Split(s, ":")[0]
 		exprStructName := strings.TrimSpace(exprType) + baseName
-		fmt.Fprintf(w, "    Visit%s(%s) interface{}\n", exprStructName, exprStructName)
+		fmt.Fprintf(w, "    Visit%s(*%s) interface{}\n", exprStructName, exprStructName)
 	}
 
 	fmt.Fprintf(w, "}\n\n")
@@ -55,8 +55,8 @@ func defineType(w io.Writer, baseName, s string) {
 	fmt.Fprintf(w, "}\n\n")
 
 	// factory
-	fmt.Fprintf(w, "func New%s(%s) %s {\n", structName, params, structName)
-	fmt.Fprintf(w, "    return %s{\n", structName)
+	fmt.Fprintf(w, "func New%s(%s) *%s {\n", structName, params, structName)
+	fmt.Fprintf(w, "    return &%s{\n", structName)
 
 	for _, field := range fields {
 		tokens := strings.Split(strings.TrimSpace(field), " ")
@@ -69,7 +69,7 @@ func defineType(w io.Writer, baseName, s string) {
 	fmt.Fprintf(w, "}\n\n")
 
 	// implement Expr
-	fmt.Fprintf(w, "func (%s %s) Accept(visitor %sVisitor) interface{} {\n", strings.ToLower(baseName), structName, baseName)
+	fmt.Fprintf(w, "func (%s *%s) Accept(visitor %sVisitor) interface{} {\n", strings.ToLower(baseName), structName, baseName)
 	fmt.Fprintf(w, "    return visitor.Visit%s(%s)\n", structName, strings.ToLower(baseName))
 	fmt.Fprintf(w, "}\n\n")
 }
@@ -109,7 +109,7 @@ func main() {
 		[]string{
 			"Block      : statements []Stmt",
 			"Expression : expression Expr",
-			"Class      : name scanner.Token, superclass VariableExpr, methods []FunctionStmt",
+			"Class      : name scanner.Token, superclass *VariableExpr, methods []*FunctionStmt",
 			"Function   : name scanner.Token, params []scanner.Token, body []Stmt",
 			"If         : condition Expr, thenBranch Stmt, elseBranch Stmt",
 			"Print      : expression Expr",
