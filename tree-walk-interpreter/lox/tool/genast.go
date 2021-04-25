@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"go/format"
 	"io"
 	"log"
 	"os"
@@ -81,7 +83,16 @@ func gen(fileName, baseName string, types []string) {
 	}
 	defer file.Close()
 
-	defineAst(file, baseName, types)
+	buf := &bytes.Buffer{}
+	defineAst(buf, baseName, types)
+	code, err := format.Source(buf.Bytes())
+	if err != nil {
+		log.Fatalln(err)
+	}
+	_, err = file.Write(code)
+	if err != nil {
+		log.Fatalln(err)
+	}
 }
 
 func main() {

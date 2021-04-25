@@ -5,162 +5,161 @@ package parser
 import "github.com/fosmjo/lox/scanner"
 
 type Stmt interface {
-    Accept(StmtVisitor) interface{}
+	Accept(StmtVisitor) interface{}
 }
 
 type StmtVisitor interface {
-    VisitBlockStmt(*BlockStmt) interface{}
-    VisitExpressionStmt(*ExpressionStmt) interface{}
-    VisitClassStmt(*ClassStmt) interface{}
-    VisitFunctionStmt(*FunctionStmt) interface{}
-    VisitIfStmt(*IfStmt) interface{}
-    VisitPrintStmt(*PrintStmt) interface{}
-    VisitReturnStmt(*ReturnStmt) interface{}
-    VisitVarStmt(*VarStmt) interface{}
-    VisitWhileStmt(*WhileStmt) interface{}
+	VisitBlockStmt(*BlockStmt) interface{}
+	VisitExpressionStmt(*ExpressionStmt) interface{}
+	VisitClassStmt(*ClassStmt) interface{}
+	VisitFunctionStmt(*FunctionStmt) interface{}
+	VisitIfStmt(*IfStmt) interface{}
+	VisitPrintStmt(*PrintStmt) interface{}
+	VisitReturnStmt(*ReturnStmt) interface{}
+	VisitVarStmt(*VarStmt) interface{}
+	VisitWhileStmt(*WhileStmt) interface{}
 }
 
 type BlockStmt struct {
-    Statements []Stmt
+	Statements []Stmt
 }
 
 func NewBlockStmt(statements []Stmt) *BlockStmt {
-    return &BlockStmt{
-        Statements: statements,
-    }
+	return &BlockStmt{
+		Statements: statements,
+	}
 }
 
 func (stmt *BlockStmt) Accept(visitor StmtVisitor) interface{} {
-    return visitor.VisitBlockStmt(stmt)
+	return visitor.VisitBlockStmt(stmt)
 }
 
 type ExpressionStmt struct {
-    Expression Expr
+	Expression Expr
 }
 
 func NewExpressionStmt(expression Expr) *ExpressionStmt {
-    return &ExpressionStmt{
-        Expression: expression,
-    }
+	return &ExpressionStmt{
+		Expression: expression,
+	}
 }
 
 func (stmt *ExpressionStmt) Accept(visitor StmtVisitor) interface{} {
-    return visitor.VisitExpressionStmt(stmt)
+	return visitor.VisitExpressionStmt(stmt)
 }
 
 type ClassStmt struct {
-    Name scanner.Token
-    Superclass *VariableExpr
-    Methods []*FunctionStmt
+	Name       scanner.Token
+	Superclass *VariableExpr
+	Methods    []*FunctionStmt
 }
 
 func NewClassStmt(name scanner.Token, superclass *VariableExpr, methods []*FunctionStmt) *ClassStmt {
-    return &ClassStmt{
-        Name: name,
-        Superclass: superclass,
-        Methods: methods,
-    }
+	return &ClassStmt{
+		Name:       name,
+		Superclass: superclass,
+		Methods:    methods,
+	}
 }
 
 func (stmt *ClassStmt) Accept(visitor StmtVisitor) interface{} {
-    return visitor.VisitClassStmt(stmt)
+	return visitor.VisitClassStmt(stmt)
 }
 
 type FunctionStmt struct {
-    Name scanner.Token
-    Params []scanner.Token
-    Body []Stmt
+	Name   scanner.Token
+	Params []scanner.Token
+	Body   []Stmt
 }
 
 func NewFunctionStmt(name scanner.Token, params []scanner.Token, body []Stmt) *FunctionStmt {
-    return &FunctionStmt{
-        Name: name,
-        Params: params,
-        Body: body,
-    }
+	return &FunctionStmt{
+		Name:   name,
+		Params: params,
+		Body:   body,
+	}
 }
 
 func (stmt *FunctionStmt) Accept(visitor StmtVisitor) interface{} {
-    return visitor.VisitFunctionStmt(stmt)
+	return visitor.VisitFunctionStmt(stmt)
 }
 
 type IfStmt struct {
-    Condition Expr
-    ThenBranch Stmt
-    ElseBranch Stmt
+	Condition  Expr
+	ThenBranch Stmt
+	ElseBranch Stmt
 }
 
 func NewIfStmt(condition Expr, thenBranch Stmt, elseBranch Stmt) *IfStmt {
-    return &IfStmt{
-        Condition: condition,
-        ThenBranch: thenBranch,
-        ElseBranch: elseBranch,
-    }
+	return &IfStmt{
+		Condition:  condition,
+		ThenBranch: thenBranch,
+		ElseBranch: elseBranch,
+	}
 }
 
 func (stmt *IfStmt) Accept(visitor StmtVisitor) interface{} {
-    return visitor.VisitIfStmt(stmt)
+	return visitor.VisitIfStmt(stmt)
 }
 
 type PrintStmt struct {
-    Expression Expr
+	Expression Expr
 }
 
 func NewPrintStmt(expression Expr) *PrintStmt {
-    return &PrintStmt{
-        Expression: expression,
-    }
+	return &PrintStmt{
+		Expression: expression,
+	}
 }
 
 func (stmt *PrintStmt) Accept(visitor StmtVisitor) interface{} {
-    return visitor.VisitPrintStmt(stmt)
+	return visitor.VisitPrintStmt(stmt)
 }
 
 type ReturnStmt struct {
-    Keyword scanner.Token
-    Value Expr
+	Keyword scanner.Token
+	Value   Expr
 }
 
 func NewReturnStmt(keyword scanner.Token, value Expr) *ReturnStmt {
-    return &ReturnStmt{
-        Keyword: keyword,
-        Value: value,
-    }
+	return &ReturnStmt{
+		Keyword: keyword,
+		Value:   value,
+	}
 }
 
 func (stmt *ReturnStmt) Accept(visitor StmtVisitor) interface{} {
-    return visitor.VisitReturnStmt(stmt)
+	return visitor.VisitReturnStmt(stmt)
 }
 
 type VarStmt struct {
-    Name scanner.Token
-    Initializer Expr
+	Name        scanner.Token
+	Initializer Expr
 }
 
 func NewVarStmt(name scanner.Token, initializer Expr) *VarStmt {
-    return &VarStmt{
-        Name: name,
-        Initializer: initializer,
-    }
+	return &VarStmt{
+		Name:        name,
+		Initializer: initializer,
+	}
 }
 
 func (stmt *VarStmt) Accept(visitor StmtVisitor) interface{} {
-    return visitor.VisitVarStmt(stmt)
+	return visitor.VisitVarStmt(stmt)
 }
 
 type WhileStmt struct {
-    Condition Expr
-    Body Stmt
+	Condition Expr
+	Body      Stmt
 }
 
 func NewWhileStmt(condition Expr, body Stmt) *WhileStmt {
-    return &WhileStmt{
-        Condition: condition,
-        Body: body,
-    }
+	return &WhileStmt{
+		Condition: condition,
+		Body:      body,
+	}
 }
 
 func (stmt *WhileStmt) Accept(visitor StmtVisitor) interface{} {
-    return visitor.VisitWhileStmt(stmt)
+	return visitor.VisitWhileStmt(stmt)
 }
-
