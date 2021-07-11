@@ -77,18 +77,19 @@ func defineType(w io.Writer, baseName, s string) {
 }
 
 func gen(fileName, baseName string, types []string) {
-	file, err := os.Create(fileName)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	defer file.Close()
-
 	buf := &bytes.Buffer{}
 	defineAst(buf, baseName, types)
 	code, err := format.Source(buf.Bytes())
 	if err != nil {
 		log.Fatalln(err)
 	}
+
+	file, err := os.Create(fileName)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer file.Close()
+
 	_, err = file.Write(code)
 	if err != nil {
 		log.Fatalln(err)
