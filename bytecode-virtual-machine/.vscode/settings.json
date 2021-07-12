@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "*.ml": "ocaml",
+        "*.mli": "ocaml",
+        "*.html": "jinja-html",
+        "chunk.h": "c",
+        "common.h": "c",
+        "value.h": "c"
+    }
+}
